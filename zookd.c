@@ -9,92 +9,66 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <netdb.h>
-#include <fcntl.h>
-#include <sys/wait.h>
-#include <openssl/conf.h>
-#include <sys/param.h>
-#include <sys/types.h>
-#include <sys/socket.h>
+#define MAX_SERVICES 256
+static int nsvcs;
+static int svcfds[MAX_SERVICES];
+static regex_t svcurls[MAX_SERVICES];
 
 static void process_client(int);
-static int run_server(const char *portstr);
-static int start_server(const char *portstr);
+static int start_daemon(int fd);
 
 int main(int argc, char **argv)
 {
     if (argc != 2)
         errx(1, "Wrong arguments");
 
-    run_server(argv[1]);
+    start_daemon(atoi(argv[1]));
 }
 
+static int start_daemon(int fd) {
+    int sockfd = -1;
+    int i;
+  
+    signal(SIGPIPE, SIG_IGN);
+    signal(SIGCHLD, SIG_IGN);
 
-/* socket-bind-listen idiom */
+    /* receive the number of services and the server socket from zookld */
+    if ((recvfd(fd, &nsvcs, sizeof(nsvcs), &sockfd) <= 0) || sockfd < 0)
+        err(1, "recvfd sockfd");
+    --nsvcs;
+    warnx("Start with %d service(s)", nsvcs);
 
-static int start_server(const char *portstr)
-{
-    struct addrinfo hints = {0}, *res;
-    int sockfd;
-    int e, opt = 1;
+    /* receive url patterns of all services */
+    for (i = 0; i != nsvcs; ++i)
+    {
+        char url[1024], regexp[1024];
+        if (recvfd(fd, url, sizeof(url), &svcfds[i]) <= 0)
+            err(1, "recvfd svc %d", i + 1);
+       /* parens are necessary here so that regexes like a|b get
+          parsed properly and not as (^a)|(b$) */
+        snprintf(regexp, sizeof(regexp), "^(%s)$", url);
+        if (regcomp(&svcurls[i], regexp, REG_EXTENDED | REG_NOSUB))
+            errx(1, "Bad url for service %d: %s", i + 1, url);
+        warnx("Dispatch %s for service %d", regexp, i + 1);
+    }
 
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE;
-
-    if ((e = getaddrinfo(NULL, portstr, &hints, &res)))
-        errx(1, "getaddrinfo: %s", gai_strerror(e));
-    if ((sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
-        err(1, "socket");
-    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)))
-        err(1, "setsockopt");
-    if (fcntl(sockfd, F_SETFD, FD_CLOEXEC) < 0)
-        err(1, "fcntl");
-    if (bind(sockfd, res->ai_addr, res->ai_addrlen))
-        err(1, "bind");
-    if (listen(sockfd, 5))
-        err(1, "listen");
-    freeaddrinfo(res);
-
-    return sockfd;
-}
-
-static int run_server(const char *port) {
-    int sockfd = start_server(port);
+    close(fd);
     for (;;)
     {
-	int cltfd = accept(sockfd, NULL, NULL);
-	int pid;
-	int status;
-
-	if (cltfd < 0)
-	    err(1, "accept");
-
-	/* fork a new process for each client process, because the process
-	 * builds up state specific for a client (e.g. cookie and other
-	 * enviroment variables that are set by request). We want to get rid off
-	 * that state when we have processed the request and start the next
-	 * request in a pristine state.
-         */
-	switch ((pid = fork()))
-	{
-	case -1:
-	    err(1, "fork");
-
-	case 0:
-	    process_client(cltfd);
-	    exit(0);
-	    break;
-
-	default:
-	    close(cltfd);
-	    pid = wait(&status);
-	    if (WIFSIGNALED(status)) {
-		printf("Child process %d terminated incorrectly, receiving signal %d\n",
-		       pid, WTERMSIG(status));
-	    }
-	    break;
-	}
+        int cltfd = accept(sockfd, NULL, NULL);
+        if (cltfd < 0)
+            err(1, "accept");
+        switch (fork())
+        {
+        case -1: /* error */
+            err(1, "fork");
+        case 0:  /* child */
+            process_client(cltfd);
+            return 0;
+        default: /* parent */
+            close(cltfd);
+            break;
+        }
     }
 }
 
@@ -109,13 +83,21 @@ static void process_client(int fd)
     if ((errmsg = http_request_line(fd, reqpath, env, &env_len)))
         return http_err(fd, 500, "http_request_line: %s", errmsg);
 
-    env_deserialize(env, sizeof(env));
+    int i;
+    for (i = 0; i < nsvcs; ++i)
+    {
+        if (!regexec(&svcurls[i], reqpath, 0, 0, 0))
+        {
+            warnx("Forward %s to service %d", reqpath, i + 1);
+            break;
+        }
+    }
 
-    /* get all headers */
-    if ((errmsg = http_request_headers(fd)))
-      http_err(fd, 500, "http_request_headers: %s", errmsg);
-    else
-      http_serve(fd, getenv("REQUEST_URI"));
+    if (i == nsvcs)
+        return http_err(fd, 500, "Error dispatching request: %s", reqpath);
+
+    if (sendfd(svcfds[i], env, env_len, fd) <= 0)
+        return http_err(fd, 500, "Error forwarding request: %s", reqpath);
 
     close(fd);
 }
