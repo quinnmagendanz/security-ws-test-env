@@ -1,1 +1,31 @@
-## Place your answers here.
+## Place your answers here
+
+Memory Corruption Bugs
+
+[http.c:276]
+[Implemented] The pn variable can be overflowed in the http_serve function by an input path which is greater than 1024 bytes. An additional 4 bytes after these 1024 bytes will override the function call "handler" to point to a different function. Once this is done, a call to handler will take control flow of the program. This attack is not preventable by a stack canary because we are overriding a function pointer which is pushed to the stack after the function would push the stack canary, and would thus not override it.
+
+
+[zookd.c:105]
+The reqpath variable can be overwritten in url_decode by a url which is larger than 2048 chars. reqpath gets passed into http_read_line then url_decode, and if the path is longer than 2048, it will begin to override other data such as env_len and the function pushes (including the return address). Changing the return address to code injected into the buffer can allow for grades.txt deletion. This can be prevented by a stack canary because reqpath is on the stack and we need to override the function pushes which would include the stack canary. Since this attack uses the return address to redirect control flow, we can use unlink on a non-executable stack in the same way as we did in the first exploit, writing the filepath and its string pointer during the overflow to use as argument to unlink.
+
+
+[http.c:120]
+[Implemented] The value variable can be overwritten in url_decode by a url header which is larger than 512 chars. You would structure the imput by filling the 512 buffer with code/NOPs and then overflowing the 24 extra bytes bytes between the buffer and the return address and then the return address. This can be done using a large header. This can be prevented by a stack canary because value is on the stack and a stack canary on funtion push would be overridden.
+
+
+[http.c:353]
+The name buffer can be overriden using a path longer than 1024 during the dir_join function. This would overwrite the buffer, and additional input would begin to overflow the pushed function parameters like the return address. Changing the return address to code injected in the buffer can allow for deletion of grades.txt. The stack canary would also be overriden, making it a valid technique for detection. Since this attack uses the return address to redirect control flow, we can use unlink on a non-executable stack in the same way as we did in the first exploit, writing the filepath and its string pointer during the overflow to use as argument to unlink.
+
+
+[zookd.c:103]
+This memory corruption and buffer overflow example exploits a format string attack in the sprintf function. If an input string into sprintf contains parameters which force sprintf to require additional parameters, such as %x, sprintf will read more memory around the function and use that to fill the %x format. This can cause a much larger string to be produced by sprintf, one that could then overflow the envp buffer and cause memory corruption and ultimately override the return address of process client. Changing the return address would allow for redirection of injected code and deletion of the grades.txt file. This can be prevented by a stack canary because the buffer is within the function and needs to override pushed function variables to get to the return address. Since this attack uses the return address to redirect control flow, we can use unlink on a non-executable stack in the same way as we did in the first exploit, writing the filepath and its string pointer during the overflow to use as argument to unlink.
+
+
+Additional Bugs
+
+[http.c:94]
+This bug leaves the program open to format string attacks of various purposes.  If an input string into sprintf contains parameters which force sprintf to require additional parameters, such as %x, sprintf will read more memory around the function and use that to fill the %x format. Such a bug can expose memory, or produce large strings which can override buffers and other memory.
+
+
+  
