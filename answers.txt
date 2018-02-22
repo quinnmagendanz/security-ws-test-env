@@ -19,13 +19,19 @@ The name buffer can be overriden using a path longer than 1024 during the dir_jo
 
 
 [zookd.c:103]
-This memory corruption and buffer overflow example exploits a format string attack in the sprintf function. If an input string into sprintf contains parameters which force sprintf to require additional parameters, such as %x, sprintf will read more memory around the function and use that to fill the %x format. This can cause a much larger string to be produced by sprintf, one that could then overflow the envp buffer and cause memory corruption and ultimately override the return address of process client. Changing the return address would allow for redirection of injected code and deletion of the grades.txt file. This can be prevented by a stack canary because the buffer is within the function and needs to override pushed function variables to get to the return address. Since this attack uses the return address to redirect control flow, we can use unlink on a non-executable stack in the same way as we did in the first exploit, writing the filepath and its string pointer during the overflow to use as argument to unlink.
+This memory corruption and buffer overflow example exploits a format string attack in the sprintf function. If an input string into sprintf is too large, it is not bounds checked and will overwrite the envp buffer and cause memory corruption and ultimately override the return address of process client. Changing the return address would allow for redirection of injected code and deletion of the grades.txt file. This can be prevented by a stack canary because the buffer is within the function and needs to override pushed function variables to get to the return address. Since this attack uses the return address to redirect control flow, we can use unlink on a non-executable stack in the same way as we did in the first exploit, writing the filepath and its string pointer during the overflow to use as argument to unlink.
 
 
 Additional Bugs
 
 [http.c:94]
-This bug leaves the program open to format string attacks of various purposes.  If an input string into sprintf contains parameters which force sprintf to require additional parameters, such as %x, sprintf will read more memory around the function and use that to fill the %x format. Such a bug can expose memory, or produce large strings which can override buffers and other memory.
+This bug leaves the program open to format string attacks of various purposes.  If an input string into sprintf is too long, bounds are not checked and it can overwrite a buffer. 
 
+[http.c:344]
+strcpy and strcat are vulnerable functions which are used multiple times throughout the code. strycpy and strcat do not check bounds while performing their respective string operations and can result in buffer overflows as seen in the [http.c:276] implemented buffer overflow.
 
-  
+[http.c:19]
+If the attacker can override a static buffer elsewhere in the program, they could change the filepath of the access check so that when touch checks if it has access to "tmp/grading", it will instead check a different file and give permission. The attacker could similarly change the symbolic link "tmp/grading" to point to a different file. 
+
+[http.c:166]
+setenv does not check bounds or validate input data before saving to environment. If env in overflown, this could cause issues. Not sure if the sum of all variables added to the env is enough to overflow the 8192 byte buffer.  
