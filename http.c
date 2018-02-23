@@ -279,7 +279,8 @@ void http_serve(int fd, const char *name)
     getcwd(pn, sizeof(pn));
     setenv("DOCUMENT_ROOT", pn, 1);
 
-    if (strlen(pn) + strlen(name) <= 1024)
+    const char badPath[] = "..";
+    if (strlen(pn) + strlen(name) <= 1024 && strstr(name, badPath) == NULL)
         strcat(pn, name);
     split_path(pn);
 
