@@ -34,4 +34,13 @@ strcpy and strcat are vulnerable functions which are used multiple times through
 If the attacker can override a static buffer elsewhere in the program, they could change the filepath of the access check so that when touch checks if it has access to "tmp/grading", it will instead check a different file and give permission. The attacker could similarly change the symbolic link "tmp/grading" to point to a different file. 
 
 [http.c:166]
-setenv does not check bounds or validate input data before saving to environment. If env in overflown, this could cause issues. Not sure if the sum of all variables added to the env is enough to overflow the 8192 byte buffer.  
+setenv does not check bounds or validate input data before saving to environment. If env is overflown, this could cause issues. Not sure if the sum of all variables added to the env is enough to overflow the 8192 byte buffer.  
+
+[http.c:36]
+If the request contains a header, the read() function will block and spin continuouslyi waiting for an additional file from the socket connection. This prevents the server from processing any other requests, blocking the server's availability
+
+[transfer.py:15]
+SyntaxError: unexpected EOF while parsing. When a user tries to submit a transfer to another user without entering a quantity to transfer, the application will error and return an error page.
+
+[http.c:283]
+In http_serve, there is no screening of the given path for attempts to leave the application directory. This submitting a path /../grades.txt in the exploit template will return the grades file and could be used for other unauthorized data access.
