@@ -3,15 +3,148 @@
 # desc
 #
 
-[zookd.c:1612]
-description goes here. for example, the 'buf' variable can be
-overwritten by the 'msg' variable because ...
+[http.c:276]
+[Implemented] The pn variable can be overflowed in the http_serve function by an input path which is greater than 1024 bytes. An additional 4 bytes after these 1024 bytes will override the function call "handler" to point to a different function. Once this is done, a call to handler will take control flow of the program. This attack is not preventable by a stack canary because we are overriding a function pointer which is pushed to the stack after the function would push the stack canary, and would thus not override it.
 
-    <paste offending line(s) of code here>
+void http_serve(int fd, const char *name)
+{
+    void (*handler)(int, const char *) = http_serve_none;
+    char pn[1024];
+    struct stat st;
 
-[http.c:1512]
-another description.
+    getcwd(pn, sizeof(pn));
+    setenv("DOCUMENT_ROOT", pn, 1);
 
-    <paste offending line(s) of code here>
+    strcat(pn, name);
+    split_path(pn);
+...
 
-# many more come here
+
+[zookd.c:105]
+The reqpath variable can be overwritten in url_decode by a url which is larger than 2048 chars. reqpath gets passed into http_read_line then url_decode, and if the path is longer than 2048, it will begin to override other data such as env_len and the function pushes (including the return address). This can be prevented by a stack canary because reqpath is on the stack and we need to override the function pushes which would include the stack canary.
+
+void url_decode(char *dst, const char *src)
+{
+    for (;;)
+    {
+        if (src[0] == '%' && src[1] && src[2])
+        {
+            char hexbuf[3];
+            hexbuf[0] = src[1];
+            hexbuf[1] = src[2];
+            hexbuf[2] = '\0';
+
+            *dst = strtol(&hexbuf[0], 0, 16);
+            src += 3;
+        }
+        else if (src[0] == '+')
+        {
+            *dst = ' ';
+            src++;
+        }
+        else
+        {
+            *dst = *src;
+            src++;
+
+            if (*dst == '\0')
+                break;
+        }
+
+        dst++;
+    }
+}
+
+[http.c:120]
+[Implemented] The value variable can be overwritten in url_decode by a url header which is larger than 512 chars. You would structure the imput by filling the 512 buffer with code/NOPs and then overflowing the 24 extra bytes bytes between the buffer and the return address and then the return address. This can be done using a large header. This can be prevented by a stack canary because value is on the stack and a stack canary on funtion push would be overridden.
+
+void url_decode(char *dst, const char *src)
+{
+    for (;;)
+    {
+        if (src[0] == '%' && src[1] && src[2])
+        {
+            char hexbuf[3];
+            hexbuf[0] = src[1];
+            hexbuf[1] = src[2];
+            hexbuf[2] = '\0';
+
+            *dst = strtol(&hexbuf[0], 0, 16);
+            src += 3;
+        }
+        else if (src[0] == '+')
+        {
+            *dst = ' ';
+            src++;
+        }
+        else
+        {
+            *dst = *src;
+            src++;
+
+            if (*dst == '\0')
+                break;
+        }
+
+        dst++;
+    }
+}
+
+[http.c:353]
+The name buffer can be overriden using a path longer than 1024 during the dir_join function. This would overwrite the buffer, and additional input would begin to overflow the pushed function parameters like the return address. The stack canary would also be overriden, making it a valid technique for detection.
+
+void http_serve_directory(int fd, const char *pn) {
+    /* for directories, use index.html or similar in that directory */
+    static const char * const indices[] = {"index.html", "index.php", "index.cgi", NULL};
+    char name[1024];
+    struct stat st;
+    int i;
+
+    for (i = 0; indices[i]; i++) {
+        dir_join(name, pn, indices[i]);
+        if (stat(name, &st) == 0 && S_ISREG(st.st_mode)) {
+            dir_join(name, getenv("SCRIPT_NAME"), indices[i]);
+            break;
+        }
+    }
+
+    if (indices[i] == NULL) {
+        http_err(fd, 403, "No index file in %s", pn);
+        return;
+    }
+
+[zookd.c:103]
+This memory corruption and buffer overflow example exploits a format string attack in the sprintf function. If an input string into sprintf contains parameters which force sprintf to require additional parameters, such as %x, sprintf will read more memory around the function and use that to fill the %x format. This can cause a much larger string to be produced by sprintf, one that could then overflow the envp buffer and cause memory corruption and ultimately override the return address of process client. This can be prevented by a stack canary because the buffer is within the function and needs to override pushed function variables to get to the return address.
+
+const char *http_request_line(int fd, char *reqpath, char *env, size_t *env_len)
+{
+    static char buf[8192];      /* static variables are not on the stack */
+    char *sp1, *sp2, *qp, *envp = env;
+
+    /* For lab 2: don't remove this line. */
+    touch("http_request_line");
+
+    if (http_read_line(fd, buf, sizeof(buf)) < 0)
+        return "Socket IO error";
+
+    /* Parse request like "GET /foo.html HTTP/1.0" */
+    sp1 = strchr(buf, ' ');
+    if (!sp1)
+        return "Cannot parse HTTP request (1)";
+    *sp1 = '\0';
+    sp1++;
+    if (*sp1 != '/')
+        return "Bad request path";
+
+    sp2 = strchr(sp1, ' ');
+    if (!sp2)
+        return "Cannot parse HTTP request (2)";
+    *sp2 = '\0';
+    sp2++;
+
+    /* We only support GET and POST requests */
+    if (strcmp(buf, "GET") && strcmp(buf, "POST"))
+        return "Unsupported request (not GET or POST)";
+
+    envp += sprintf(envp, "REQUEST_METHOD=%s", buf) + 1;
+    envp += sprintf(envp, "SERVER_PROTOCOL=%s", sp2) + 1;
