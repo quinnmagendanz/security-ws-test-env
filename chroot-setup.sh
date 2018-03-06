@@ -19,8 +19,8 @@ set_perms() {
     local perms="$2"
     local pn="$3"
 
-    chown $ownergroup $pn
-    chmod $perms $pn
+    chown -R $ownergroup $pn
+    chmod -R $perms $pn
 }
 
 rm -rf /jail
@@ -69,4 +69,11 @@ rm -rf /jail/zoobar/db
 
 python /jail/zoobar/zoodb.py init-person
 python /jail/zoobar/zoodb.py init-transfer
+
+# speficy file permissions
+set_perms 1000:2101 770 /jail/zoobar/db
+set_perms 1000:2102 750 /jail/zoobar/index.cgi
+set_perms 1000:2103 750 /jail/zoobar/templates
+set_perms 1000:2104 750 /jail/zoobar/media
+
 
