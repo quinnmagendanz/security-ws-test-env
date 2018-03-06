@@ -6,13 +6,16 @@ from zoodb import *
 import auth
 import bank
 import random
+import rpclib
 
 class User(object):
     def __init__(self):
         self.person = None
 
     def checkLogin(self, username, password):
-        token = auth.login(username, password)
+        token = None
+        with rpclib.client_connect('/authsvc/sock') as c:
+            token = c.call('login', username=username, token=token)
         if token is not None:
             return self.loginCookie(username, token)
         else:
@@ -26,7 +29,9 @@ class User(object):
         self.person = None
 
     def addRegistration(self, username, password):
-        token = auth.register(username, password)
+        token = None
+        with rpclib.client_connect('/authsvc/sock') as c:
+            token = c.call('register', username=username, token=token)
         if token is not None:
             return self.loginCookie(username, token)
         else:
@@ -36,7 +41,10 @@ class User(object):
         if not cookie:
             return
         (username, token) = cookie.rsplit("#", 1)
-        if auth.check_token(username, token):
+        tokenCheck = False
+        with rpclib.client_connect('/authsvc/sock') as c:
+            tokenCheck = c.call('check_token', username=username, token=token) 
+        if tokenCheck:
             self.setPerson(username, token)
 
     def setPerson(self, username, token):
