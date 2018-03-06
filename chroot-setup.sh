@@ -75,7 +75,7 @@ python /jail/zoobar/zoodb.py init-cred
 # speficy file permissions
 set_perms 1000:2101 770 /jail/zoobar/db/person
 set_perms 1000:2106 770 /jail/zoobar/db/transfer
-set_perms 1301:2105 770 /jail/zoobar/db/cred
+set_perms 1301:3000 700 /jail/zoobar/db/cred
 set_perms 1000:2102 750 /jail/zoobar/index.cgi
 set_perms 1000:2103 750 /jail/zoobar/templates
 set_perms 1000:2104 750 /jail/zoobar/media
