@@ -1,40 +1,53 @@
 from zoodb import *
 from debug import *
-
+from sqlalchemy.ext.declarative import DeclarativeMeta
+import json
 import time
 
 def transfer(sender, recipient, zoobars):
-    persondb = person_setup()
-    senderp = persondb.query(Person).get(sender)
-    recipientp = persondb.query(Person).get(recipient)
+    bankdb = bank_setup()
+    senderp = bankdb.query(Bank).get(sender)
+    recipientp = bankdb.query(Bank).get(recipient)
 
     sender_balance = senderp.zoobars - zoobars
     recipient_balance = recipientp.zoobars + zoobars
 
-    if sender_balance < 0 or recipient_balance < 0:
+    if sender_balance < 0 or recipient_balance < 0 or zoobars < 0:
         raise ValueError()
 
     senderp.zoobars = sender_balance
     recipientp.zoobars = recipient_balance
-    persondb.commit()
+    bankdb.commit()
 
     transfer = Transfer()
     transfer.sender = sender
     transfer.recipient = recipient
     transfer.amount = zoobars
     transfer.time = time.asctime()
-
     transferdb = transfer_setup()
     transferdb.add(transfer)
     transferdb.commit()
 
+def init_account(username):
+    bank_db = bank_setup()
+    new_account = Bank()
+    new_account.username = username
+    bank_db.add(new_account)
+    bank_db.commit()
+
 def balance(username):
-    db = person_setup()
-    person = db.query(Person).get(username)
-    return person.zoobars
+    db = bank_setup()
+    account = db.query(Bank).get(username)
+    return account.zoobars
 
 def get_log(username):
     db = transfer_setup()
-    return db.query(Transfer).filter(or_(Transfer.sender==username,
-                                         Transfer.recipient==username))
-
+    result = db.query(Transfer).filter(or_(Transfer.sender==username,
+                                             Transfer.recipient==username))
+    return_list = []
+    for u in result:
+        element = u.__dict__
+        element.pop('_sa_instance_state', None)
+        return_list.append(element)
+    print(return_list)
+    return json.dumps(return_list)

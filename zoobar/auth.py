@@ -1,40 +1,58 @@
-from zoodb import *
 from debug import *
-
+from zoodb import *
+import rpclib
+from os import urandom
+import pbkdf2
 import hashlib
 import random
+import bank_client
+from base64 import b64encode
 
 def newtoken(db, person):
     hashinput = "%s%.10f" % (person.password, random.random())
+    # TODO(magendanz) MD5 is depricated
     person.token = hashlib.md5(hashinput).hexdigest()
     db.commit()
     return person.token
 
 def login(username, password):
-    db = person_setup()
-    person = db.query(Person).get(username)
+    db = cred_setup()
+    person = db.query(Cred).get(username)
     if not person:
         return None
-    if person.password == password:
+    check_pass = pbkdf2.PBKDF2(str(password), person.salt).hexread(32)
+    if person.password == check_pass:
         return newtoken(db, person)
     else:
         return None
 
 def register(username, password):
-    db = person_setup()
-    person = db.query(Person).get(username)
+    cred_db = cred_setup()
+    person = cred_db.query(Cred).get(username)
     if person:
         return None
-    newperson = Person()
-    newperson.username = username
-    newperson.password = password
-    db.add(newperson)
-    db.commit()
-    return newtoken(db, newperson)
+    new_cred = Cred()
+    new_cred.username = username
+    salt = b64encode(urandom(64)).decode('utf-8')
+    hash_pass = pbkdf2.PBKDF2(str(password), salt).hexread(32)
+    new_cred.password = hash_pass
+    new_cred.salt = salt
+    cred_db.add(new_cred)
+    cred_db.commit()
+
+    person_db = person_setup()
+    new_person = Person()
+    new_person.username = username
+    person_db.add(new_person)
+    person_db.commit()
+
+    bank_client.init_account(username)
+
+    return newtoken(cred_db, new_cred)
 
 def check_token(username, token):
-    db = person_setup()
-    person = db.query(Person).get(username)
+    db = cred_setup()
+    person = db.query(Cred).get(username)
     if person and person.token == token:
         return True
     else:
