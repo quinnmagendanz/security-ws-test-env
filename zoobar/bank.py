@@ -54,5 +54,5 @@ def get_log(username):
         element = u.__dict__
         element.pop('_sa_instance_state', None)
         return_list.append(element)
-    print(return_list)
+    #print(return_list)
     return return_list

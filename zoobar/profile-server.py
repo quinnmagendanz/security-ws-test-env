@@ -19,9 +19,12 @@ import time
 import errno
 
 class ProfileAPIServer(rpclib.RpcServer):
-    def __init__(self, user, visitor):
+    def __init__(self, user, visitor, user_token):
         self.user = user
         self.visitor = visitor
+        self.user_token = user_token
+        os.setgid(2101)
+        os.setuid(1503) 
 
     def rpc_get_self(self):
         return self.user
@@ -30,14 +33,7 @@ class ProfileAPIServer(rpclib.RpcServer):
         return self.visitor
 
     def rpc_get_xfers(self, username):
-        xfers = []
-        for xfer in bank_client.get_log(username):
-            xfers.append({ 'sender': xfer.sender,
-                           'recipient': xfer.recipient,
-                           'amount': xfer.amount,
-                           'time': xfer.time,
-                         })
-        return xfers
+        return bank_client.get_log(username)
 
     def rpc_get_user_info(self, username):
         person_db = zoodb.person_setup()
@@ -50,7 +46,7 @@ class ProfileAPIServer(rpclib.RpcServer):
                }
 
     def rpc_xfer(self, target, zoobars):
-        bank_client.transfer(self.user, target, zoobars, g.user.token)
+        bank_client.transfer(self.user, target, zoobars, self.user_token)
 
 def run_profile(pcode, profile_api_client):
     globals = {'api': profile_api_client}
@@ -58,16 +54,22 @@ def run_profile(pcode, profile_api_client):
 
 class ProfileServer(rpclib.RpcServer):
     def rpc_run(self, pcode, user, visitor):
-        uid = 0
+        uid = 1502
 
-        userdir = '/tmp'
+        userdir = '/tmp/' + ''.join([str(ord(c)) for c in user]) 
+        if not os.path.exists(userdir):
+            os.mkdir(userdir)
+            os.chown(userdir, 1502, 1503)
+            os.chmod(userdir, 0o770)
+        cred_db = zoodb.cred_setup()
+        user_token = cred_db.query(zoodb.Cred).get(user).token        
 
         (sa, sb) = socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM, 0)
         pid = os.fork()
         if pid == 0:
             if os.fork() <= 0:
                 sa.close()
-                ProfileAPIServer(user, visitor).run_sock(sb)
+                ProfileAPIServer(user, visitor, user_token).run_sock(sb)
                 sys.exit(0)
             else:
                 sys.exit(0)
