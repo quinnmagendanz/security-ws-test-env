@@ -75,7 +75,7 @@ def test_stuff():
     for x in resp:
       print x
 
-  ## Exercise 6: your code here.
+  ## Exercise 9: your code here.
 
   ## Detect balance mismatch.
   ## When detected, call report_balance_mismatch()

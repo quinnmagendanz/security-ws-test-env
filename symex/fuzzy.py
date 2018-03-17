@@ -542,7 +542,7 @@ class concolic_str(str):
     res = o + self.__v
     return concolic_str(sym_concat(ast(o), ast(self)), res)
 
-  ## Exercise 4: your code here.
+  ## Exercise 7: your code here.
   ## Implement symbolic versions of string length (override __len__)
   ## and contains (override __contains__).
 
