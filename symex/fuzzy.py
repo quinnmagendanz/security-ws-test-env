@@ -874,6 +874,14 @@ def concolic_execs(func, maxiter = 100, verbose = 0):
     ##   where caller is the corresponding value from the list of call
     ##   sites returned by concolic_find_input (i.e., branch_callers).
 
+    for i in range(len(branch_conds)):
+      constraint = concolic_force_branch(i, branch_conds, branch_callers)
+      if constraint not in checked:
+        checked.add(constraint)
+        (ok, ok_results) = concolic_find_input(constraint, concrete_values.var_names()) 
+        inputs.add(ok_results, branch_callers[i])
+
+
   if verbose > 0:
     print 'Stopping after', iter, 'iterations'
 

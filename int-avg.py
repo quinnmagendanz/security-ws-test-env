@@ -23,10 +23,10 @@ b = z3.BitVec('b', 32)
 
 #u_avg = z3.UDiv(a + b, 2)
 u_avg = z3.UDiv(a,2) + z3.UDiv(b,2) + z3.UDiv((1 & a) + (1 & b), 2)
-s_avg = a/2 + b/2
-#s_avg = s_close + int(s_close>0)*((1&a)&(1&b)) + int(s_close<0)*((1&a)|(1&b))
-if (s_avg > 0 and 1&a == 1 and 1&b == 1): s_avg += 1
-elif (s_avg < 0 and (1&a == 1 or 1&b ==1)): s_avg += 1
+s_close = a/2 + b/2
+#s_avg = s_close + (s_close>=0)*((1&a)&(1&b)) + (s_close<0)*((1&a)|(1&b))
+condition = z3.Or(z3.And(s_close >= 0, ((1&a) * (1&b)) == 1), z3.And(s_close < 0, ((1&a) + (1&b)) > 0))
+s_avg = z3.If(condition, s_close + 1, s_close)
 
 ## Do not change the code below.
 
@@ -53,6 +53,11 @@ def do_check(msg, e):
     if ok == z3.sat:
         m = solver.model()
         print "  Example solution:", m
+
+print(u_avg)
+print(real_u_avg)
+print(s_avg)
+print(real_s_avg)
 
 do_check("unsigned avg", u_avg != real_u_avg)
 do_check("signed avg", s_avg != real_s_avg)
