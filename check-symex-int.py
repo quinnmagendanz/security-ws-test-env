@@ -92,6 +92,8 @@ all_ok = True
 for i in range(0, 6):
     constr = fuzzy.concolic_force_branch(i, test_branches, test_branches_callers, verbose=3)
     for j in range(0, i):
+        #print(constr)
+        #print(fuzzy.sym_not(test_branches[j]))
         (ok, _) = fuzzy.fork_and_check(fuzzy.sym_and(constr, fuzzy.sym_not(test_branches[j])))
         if ok == z3.sat:
             print "Incorrect constraint [1] for forcing branch", i

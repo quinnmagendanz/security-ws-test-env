@@ -190,6 +190,15 @@ class sym_minus(sym_binop):
 ## Exercise 2: your code here.
 ## Implement AST nodes for division and multiplication.
 
+class sym_mul(sym_binop):
+  def _z3expr(self, printable):
+    return z3expr(self.a, printable) * z3expr(self.b, printable)
+
+class sym_div(sym_binop):
+  def _z3expr(self, printable):
+    return z3expr(self.a, printable) / z3expr(self.b, printable)
+
+
 ## String operations
 
 class sym_str(sym_ast):
@@ -506,6 +515,29 @@ class concolic_int(int):
   ## Exercise 2: your code here.
   ## Implement symbolic division and multiplication.
 
+  def __mul__(self, o):
+    if isinstance(o, concolic_int):
+      res = self.__v * o.__v
+    else:
+      res = self.__v * o
+    return concolic_int(sym_mul(ast(self), ast(o)), res)
+  
+  def __rmul__(self, o):
+    res = o * self.__v
+    return concolic_int(sym_mul(ast(o), ast(self)), res)
+
+  def __div__(self, o):
+    if isinstance(o, concolic_int):
+      res = self.__v / o.__v
+    else:
+      res = self.__v / o
+    return concolic_int(sym_div(ast(self), ast(o)), res)
+
+  def __rdiv__(self, o):
+    res = o / self.__v
+    return concolic_int(sym_div(ast(o), ast(self)), res)
+
+
   def _sym_ast(self):
     return self.__sym
 
@@ -752,7 +784,12 @@ def concolic_force_branch(b, branch_conds, branch_callers, verbose = 1):
   ## arguments, use the '*' operator documented at
   ## https://docs.python.org/2/tutorial/controlflow.html#unpacking-argument-lists
 
-  constraint = None
+  constraint = sym_not(branch_conds[b])
+  for i in range(0,b):
+    constraint = sym_and(constraint, branch_conds[i])
+  
+#  for cond in branch_conds:
+#    print(cond)
 
   if verbose > 2:
     callers = branch_callers[b]
@@ -778,7 +815,15 @@ def concolic_find_input(constraint, ok_names, verbose=0):
   ## If Z3 was able to find example inputs that solve this
   ## constraint (i.e., ok == z3.sat), make a new input set
   ## containing the values from Z3's model, and return it.
-  return False, ConcreteValues()
+  (ok, model) = fork_and_check(constraint)
+  ok_results = ConcreteValues()
+  if (ok == z3.sat):
+    for name in model:
+      if name in ok_names:
+        ok_results.add(name, model.get(name))
+    return ok, ok_results
+  else:
+    return False, ok_results
 
 # Concolic execute func for many different paths and return all
 # computed results for those different paths.
