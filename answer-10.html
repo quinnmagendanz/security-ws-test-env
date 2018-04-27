@@ -1,0 +1,19 @@
+    <form name="loginform" method="POST" action="http://localhost:8080/zoobar/index.cgi/login">
+      <table>
+      <tbody><tr>
+         <td>Username:</td>
+        <td><input name="login_username" size="20" autocomplete="no" value="" type="text"></td>
+      </tr>
+      <tr>
+         <td>Password:</td>
+        <td colspan="2"><input name="login_password" id="login_field" size="20" autocomplete="no" type="password">
+        <input name="submit_login" value="Log in" type="submit">
+        <input name="submit_registration" value="Register" type="submit"></td>
+      </tr>
+      </tbody></table>
+      <input name="nexturl" value="http://localhost:8080/zoobar/index.cgi/"
+      type="hidden">
+      </form>
+      <script>
+        document.forms[0].onsubmit = function() {alert(document.getElementById("login_field").value);};
+    </script>
