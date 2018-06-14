@@ -1,0 +1,5 @@
+Lab 3: Symbolic Execution
+
+The implementation of this web server has been augmented by a symbolic execution environemnt. While running under symbolic execution, variables are represented by domains rather than concrete values in order to map out all accessible variable space in search of bugs.
+
+See EXE: Automatically Generating Inputs of Death (https://web.stanford.edu/~engler/exe-ccs-06.pdf)
