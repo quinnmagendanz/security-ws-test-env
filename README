@@ -1,0 +1,5 @@
+Lab 2: Privilege Segeration and Server-Side Sandboxing
+
+Here a simple web server has been modularized into different services to better separate and limit privilages. 
+
+See Building Secure High-Performance Web Services with OKWS (https://pdos.csail.mit.edu/papers/okws-usenix04.pdf)
