@@ -1,0 +1,5 @@
+Lab 1: Buffer Overflows
+
+This branch contains a set of example buffer overflow and memory corruption attacks on a simple web server. 
+
+See Stack Smashing for Fun and Profit (https://phrack.org/issues/49/14.html#article)
